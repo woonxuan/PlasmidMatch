@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plasmid Verify</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .mode-select{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff;color:var(--ink);font:inherit}
+      .reference-view{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;margin-bottom:18px}.reference-view-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}.reference-kicker{font-size:10px;letter-spacing:.15em;font-weight:800;color:var(--muted);margin-bottom:3px}.reference-view h3{font:700 22px Georgia,serif;margin:0}.reference-actions{display:flex;gap:16px;align-items:center}.copy-sequence{border:1px solid var(--line);background:#fff;padding:8px 12px}.reference-map{padding:12px 16px 10px}.map-title,.window-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:750;color:var(--muted)}.mismatch-count{color:var(--red)}.match-count{color:var(--green)}.reference-map svg{display:block;width:100%;height:180px;min-width:700px}.map-legend,.window-legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px}.map-swatch{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}.insert-swatch{background:#a8cc13}.mismatch-swatch{background:#e33b2f}.map-help{margin-left:auto}.sequence-window{border-top:1px solid var(--line);padding:14px 18px 16px}.sequence-scroll{overflow-x:auto;padding-bottom:4px}.sequence-line{display:flex;align-items:flex-start;margin-top:7px;min-width:max-content}.sequence-label{width:74px;flex:0 0 74px;font-weight:800;font-size:13px}.sample-label{color:#527800}.reference-label{color:#c32e26}.sequence-line code{font:15px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;white-space:nowrap}.sequence-mismatch{background:#ffd6d2;color:#c42f25;border-radius:2px;padding:1px 2px}.window-legend{margin:10px 0 0 74px}
+      .results-actions{display:flex;gap:8px;flex-wrap:wrap}.annotation-panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}.annotation-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.annotation-head h3{margin:0;font-size:16px}.annotation-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}.annotation-table th,.annotation-table td{text-align:left;padding:8px;border-bottom:1px solid #edf1ee}.annotation-table th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+      .difference-regions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.difference-regions-title{width:100%;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.difference-region{display:flex;align-items:center;gap:7px;border:1px solid #f0c7c3;background:#fff7f6;color:var(--red);padding:6px 8px;border-radius:7px;font-size:11px}.difference-region small{color:var(--muted)}.difference-region:hover{background:#ffe9e6}.sequence-label{position:sticky;left:0;background:#fff;z-index:2}.sequence-scroll{scroll-behavior:smooth}
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">SEQUENCE QA TOOL</p>
+          <h1>Plasmid Verify</h1>
+          <p class="lede">Compare each cloned plasmid directly with your backbone and identify insertions, deletions, and mutations.</p>
+        </div>
+        <button id="demoButton" class="secondary">Load demo data</button>
+      </header>
+
+      <section class="notice">
+        <strong>Local-first analysis.</strong> Your sequences stay in this browser. FASTQ uploads are converted into a consensus against the backbone.
+      </section>
+
+      <section class="grid two">
+        <article class="card">
+          <div class="card-title"><span class="step">1</span><div><h2>Reference construct</h2><p>Describe the plasmid you intended to create.</p></div></div>
+          <label>Backbone sequence</label>
+          <div class="file-row"><input id="backboneFile" type="file" accept=".fa,.fasta,.txt" /><button class="ghost" data-target="backboneFile">Choose file</button></div>
+          <textarea id="backboneInput" placeholder=">backbone\nUse the backbone sequence as it should appear in the final plasmid"></textarea>
+          <label>Sequence removed during Golden Gate <span class="optional">(optional)</span></label>
+          <textarea id="removedInput" class="short" placeholder=">stuffer\nPaste the backbone stuffer or cloning sequence that is removed before assembly"></textarea>
+          <p class="field-help">Optional shortcut: provide the stuffer to build the final construct directly. Leave blank to let the report show the removed Golden Gate sequence as a predicted deletion.</p>
+          <div id="inserts"></div>
+          <button id="addInsert" class="outline">＋ Add insert</button>
+          <div class="insert-table-upload"><label>Or upload inserts from Excel/CSV</label><input id="insertFile" type="file" accept=".xlsx,.xls,.csv,.tsv" /><p id="insertFileStatus" class="field-help">Use one row per insert. Include columns such as Name and Sequence.</p></div>
+          <label class="check"><input id="circular" type="checkbox" checked /> Treat plasmid as circular</label>
+        </article>
+
+        <article class="card">
+          <div class="card-title"><span class="step">2</span><div><h2>Recovered plasmid</h2><p>Upload the sequence produced by your Golden Gate cloning.</p></div></div>
+          <label>Observed sequences or reads</label>
+          <div id="clones" class="clone-list"></div>
+          <button id="addClone" class="outline">＋ Add cloned plasmid</button>
+          <div class="file-row batch-clone-upload"><input id="cloneBatchFile" type="file" multiple accept=".fa,.fasta,.fastq,.fq,.txt" /><button class="ghost" data-target="cloneBatchFile">Choose multiple clone files</button></div>
+          <p class="field-help">Add one recovered plasmid per sample. Each sample gets its own comparison and alignment.</p>
+          <button id="analyze" class="primary">Check cloning result <span>→</span></button>
+        </article>
+      </section>
+
+      <section id="results" class="results hidden">
+        <div class="results-head"><div><p class="eyebrow">ANALYSIS REPORT</p><h2 id="resultTitle">Construct status</h2></div><div class="results-actions"><button id="download" class="secondary">Download report</button></div></div>
+        <div id="sampleTabs" class="sample-tabs hidden"></div>
+        <div id="summary" class="summary-grid"></div>
+        <div class="card report-card">
+          <div class="report-tabs"><button class="tab active" data-tab="regions">Regions</button><button class="tab" data-tab="differences">Differences</button><button class="tab" data-tab="sequence">Aligned sequence</button></div>
+          <div id="regionsPanel" class="panel"></div>
+          <div id="differencesPanel" class="panel hidden"></div>
+          <div id="sequencePanel" class="panel hidden"></div>
+        </div>
+      </section>
+
+      <footer>Plasmid Verify MVP · Results are computational screening, not a substitute for experimental confirmation.</footer>
+    </main>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="app.js?v=20261024-no-annotation"></script>
+  </body>
+</html>
